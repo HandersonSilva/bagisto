@@ -1,0 +1,20 @@
+version: "3.6"
+services:
+  bagisto:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bagisto
+    working_dir: /var/www/html
+    volumes:
+      - "./src:/var/www/html"
+    ports:
+      - "9001:9000"
+      - "3000:3000"
+      - "4173:4173"
+    networks:
+     - octane_network
+
+networks:
+  octane_network:
+    external: true

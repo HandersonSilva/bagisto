@@ -1,0 +1,8 @@
+\.idea/*
+\.idea/workspace.xml
+node_modules
+commitizen
+package-lock.json
+package.json
+*.json
+docker-compose-local.yml
