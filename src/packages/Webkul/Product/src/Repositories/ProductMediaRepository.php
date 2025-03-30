@@ -5,6 +5,8 @@ namespace Webkul\Product\Repositories;
 use Exception;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
 use Webkul\Core\Eloquent\Repository;
 
 class ProductMediaRepository extends Repository
@@ -27,12 +29,11 @@ class ProductMediaRepository extends Repository
     /**
      * Get product directory.
      *
-     * @param  \Webkul\Product\Contracts\Product $product
-     * @return string
+     * @param  \Webkul\Product\Contracts\Product  $product
      */
     public function getProductDirectory($product): string
     {
-        return 'product/' . $product->id;
+        return 'product/'.$product->id;
     }
 
     /**
@@ -40,8 +41,6 @@ class ProductMediaRepository extends Repository
      *
      * @param  array  $data
      * @param  \Webkul\Product\Contracts\Product  $product
-     * @param  string  $uploadFileType
-     * @return void
      */
     public function upload($data, $product, string $uploadFileType): void
     {
@@ -50,56 +49,56 @@ class ProductMediaRepository extends Repository
          */
         $previousIds = $this->resolveFileTypeQueryBuilder($product, $uploadFileType)->pluck('id');
 
-        if (
-            isset($data[$uploadFileType]['files'])
-            && $data[$uploadFileType]['files']
-        ) {
+        $position = 0;
+
+        if (! empty($data[$uploadFileType]['files'])) {
             foreach ($data[$uploadFileType]['files'] as $indexOrModelId => $file) {
                 if ($file instanceof UploadedFile) {
-                    $this->create([
-                        'type'       => $uploadFileType,
-                        'path'       => $file->store($this->getProductDirectory($product)),
-                        'product_id' => $product->id,
-                        'position'   => $indexOrModelId,
-                    ]);
-                } else {
-                    /**
-                     * Filter out existing models because new model positions are already setuped by index.
-                     */
-                    if (
-                        isset($data[$uploadFileType]['positions'])
-                        && $data[$uploadFileType]['positions']
-                    ) {
-                        $positions = collect($data[$uploadFileType]['positions'])->keys()->filter(function ($position) {
-                            return is_numeric($position);
-                        });
+                    if (Str::contains($file->getMimeType(), 'image')) {
+                        $manager = new ImageManager;
 
-                        $this->update([
-                            'position' => $positions->search($indexOrModelId),
-                        ], $indexOrModelId);
+                        $image = $manager->make($file)->encode('webp');
+
+                        $path = $this->getProductDirectory($product).'/'.Str::random(40).'.webp';
+
+                        Storage::put($path, $image);
+                    } else {
+                        $path = $file->store($this->getProductDirectory($product));
                     }
 
+                    $this->create([
+                        'type'       => $uploadFileType,
+                        'path'       => $path,
+                        'product_id' => $product->id,
+                        'position'   => ++$position,
+                    ]);
+                } else {
                     if (is_numeric($index = $previousIds->search($indexOrModelId))) {
                         $previousIds->forget($index);
                     }
+
+                    $this->update([
+                        'position' => ++$position,
+                    ], $indexOrModelId);
                 }
             }
         }
 
         foreach ($previousIds as $indexOrModelId) {
-            if ($model = $this->find($indexOrModelId)) {
-                Storage::delete($model->path);
-
-                $this->delete($indexOrModelId);
+            if (! $model = $this->find($indexOrModelId)) {
+                continue;
             }
+
+            Storage::delete($model->path);
+
+            $this->delete($indexOrModelId);
         }
     }
 
     /**
      * Resolve file type query builder.
      *
-     * @param  \Webkul\Product\Contracts\Product $product
-     * @param  string  $uploadFileType
+     * @param  \Webkul\Product\Contracts\Product  $product
      * @return mixed
      *
      * @throws \Exception

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateBookingsTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -14,20 +14,35 @@ class CreateBookingsTable extends Migration
     public function up()
     {
         Schema::create('bookings', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
+            $table->unsignedInteger('product_id')->nullable();
+            $table->unsignedInteger('order_item_id')->nullable();
+            $table->unsignedInteger('order_id')->nullable();
             $table->integer('qty')->default(0)->nullable();
             $table->integer('from')->nullable();
             $table->integer('to')->nullable();
 
-            $table->integer('order_item_id')->unsigned()->nullable();
+            $table->foreign('order_item_id')
+                ->references('id')
+                ->on('order_items')
+                ->nullOnDelete();
 
-            $table->integer('booking_product_event_ticket_id')->unsigned()->nullable();
+            $table->foreignId('booking_product_event_ticket_id')
+                ->nullable()
+                ->constrained('booking_product_event_tickets')
+                ->nullOnDelete();
 
-            $table->integer('order_id')->unsigned()->nullable();
-            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
+            $table->foreign('order_id')
+                ->references('id')
+                ->on('orders')
+                ->nullOnDelete();
 
-            $table->integer('product_id')->unsigned()->nullable();
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('set null');
+            $table->foreign('product_id')
+                ->references('id')
+                ->on('products')
+                ->nullOnDelete();
+
+            $table->timestamps();
         });
     }
 
@@ -40,4 +55,4 @@ class CreateBookingsTable extends Migration
     {
         Schema::dropIfExists('bookings');
     }
-}
+};

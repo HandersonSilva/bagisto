@@ -14,20 +14,6 @@ class Locale extends Model implements LocaleContract
     use HasFactory;
 
     /**
-     * List of all default locale images.
-     *
-     * @var array
-     */
-    protected $defaultImages = [
-        'de' => 'flags/de.png',
-        'en' => 'flags/en.png',
-        'es' => 'flags/es.png',
-        'fr' => 'flags/fr.png',
-        'nl' => 'flags/nl.png',
-        'tr' => 'flags/tr.png',
-    ];
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array
@@ -43,51 +29,37 @@ class Locale extends Model implements LocaleContract
      *
      * @var array
      */
-    protected $appends = ['image_url'];
+    protected $appends = ['logo_url'];
 
     /**
      * Create a new factory instance for the model.
-     *
-     * @return Factory
      */
     protected static function newFactory(): Factory
     {
-        return LocaleFactory::new ();
+        return LocaleFactory::new();
     }
 
     /**
-     * Get image url for the logo image.
+     * Get the logo full path of the locale.
      *
-     * @return string
+     * @return string|null
      */
-    public function getImageUrlAttribute(): string
+    public function getLogoUrlAttribute()
     {
-        return $this->image_url();
+        return $this->logo_url();
     }
 
     /**
-     * Get image url for the logo image.
+     * Get the logo full path of the locale.
      *
-     * @return string
+     * @return string|void
      */
-    public function image_url(): string
+    public function logo_url()
     {
-        if (! $this->locale_image) {
-            return $this->getDefaultImageSource();
+        if (empty($this->logo_path)) {
+            return;
         }
 
-        return Storage::url($this->locale_image);
-    }
-
-    /**
-     * Get default image source.
-     *
-     * @return string
-     */
-    public function getDefaultImageSource(): string
-    {
-        return isset($this->defaultImages[$this->code]) && file_exists($this->defaultImages[$this->code])
-            ? asset($this->defaultImages[$this->code])
-            : '';
+        return Storage::url($this->logo_path);
     }
 }

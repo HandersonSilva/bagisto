@@ -2,53 +2,64 @@
 
 namespace Webkul\Notification\Repositories;
 
+use Illuminate\Support\Facades\DB;
 use Webkul\Core\Eloquent\Repository;
 
 class NotificationRepository extends Repository
 {
     /**
      * Specify Model class name
-     *
-     * @return string
      */
-    function model(): string
+    public function model(): string
     {
         return 'Webkul\Notification\Contracts\Notification';
     }
 
     /**
-     * Return Filtered Notification resources
-     *
-     * @return objects
+     * Return Filtered Notification resources.
      */
-    public function getParamsData($params)
+    public function getParamsData(array $params): array
     {
-        if (
-            isset($params['id'])
-            && isset($params['status'])
-        ) {
-            return $params['status'] != 'All' ? $this->model->where(function($qry) use ($params) {
-                    $qry->whereHas('order',function ($q) use ($params) {
-                        $q->where(['status' => $params['status']]);
-                    });
-                })->where('order_id', $params['id'])->with('order')->paginate(10)  : $this->model->where('order_id', $params['id'])->with('order')->paginate(10) ;
-        } elseif (isset($params['status'])) {
-            return $params['status'] != 'All' ? $this->model->where(function($qry) use ($params) {
-                $qry->whereHas('order',function ($q) use ($params) {
-                    $q->where(['status' => $params['status']]);
-                });
-            })->with('order')->paginate(10): $this->model->with('order')->latest()->paginate(10);
-        } elseif(
-            isset($params['read'])
-            && isset($params['limit'])
-        ) {
-            return $this->model->where('read', $params['read'])->limit($params['limit'])->with('order')->latest()->paginate($params['limit']);
-        } elseif(isset($params['limit'])) {
-            return $this->model->limit($params['limit'])->with('order')->latest()->paginate($params['limit']);
-        } elseif(isset($params['id'])) {
-            return $this->model->where('order_id', $params['id'])->with('order')->paginate(10);
+        $query = $this->model->with('order');
+
+        if (isset($params['status']) && $params['status'] != 'All') {
+            $query->whereHas('order', function ($q) use ($params) {
+                $q->where(['status' => $params['status']]);
+            });
         }
 
-        return [];
+        if (isset($params['read']) && isset($params['limit'])) {
+            $query->where('read', $params['read'])->limit($params['limit']);
+        } elseif (isset($params['limit'])) {
+            $query->limit($params['limit']);
+        }
+
+        $notifications = $query->latest()->paginate($params['limit'] ?? 10);
+
+        $statusCounts = $this->model->join('orders', 'notifications.order_id', '=', 'orders.id')
+            ->select('orders.status', DB::raw('COUNT(*) as status_count'))
+            ->groupBy('orders.status')
+            ->get();
+
+        return ['notifications' => $notifications, 'status_counts' => $statusCounts];
+    }
+
+    /**
+     * Return Notification resources.
+     *
+     * @return array
+     */
+    public function getAll(array $params = [])
+    {
+        $query = $this->model->with('order');
+
+        $notifications = $query->latest()->paginate($params['limit'] ?? 10);
+
+        $statusCounts = $this->model->join('orders', 'notifications.order_id', '=', 'orders.id')
+            ->select('orders.status', DB::raw('COUNT(*) as status_count'))
+            ->groupBy('orders.status')
+            ->get();
+
+        return ['notifications' => $notifications, 'status_counts' => $statusCounts];
     }
 }

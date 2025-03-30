@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-class CreateBookingProductDefaultSlotsTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -14,14 +14,16 @@ class CreateBookingProductDefaultSlotsTable extends Migration
     public function up()
     {
         Schema::create('booking_product_default_slots', function (Blueprint $table) {
-            $table->increments('id');
+            $table->id();
+            $table->unsignedInteger('booking_product_id');
             $table->string('booking_type');
             $table->integer('duration')->nullable();
             $table->integer('break_time')->nullable();
             $table->json('slots')->nullable();
 
-            $table->integer('booking_product_id')->unsigned();
-            $table->foreign('booking_product_id')->references('id')->on('booking_products')->onDelete('cascade');
+            $table->foreign('booking_product_id')
+                ->references('id')->on('booking_products')
+                ->onDelete('cascade');
         });
     }
 
@@ -34,4 +36,4 @@ class CreateBookingProductDefaultSlotsTable extends Migration
     {
         Schema::dropIfExists('booking_product_default_slots');
     }
-}
+};

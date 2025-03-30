@@ -10,7 +10,6 @@ class Bouncer
      * Handle an incoming request.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @param  string|null  $guard
      * @return mixed
      */
@@ -79,13 +78,10 @@ class Bouncer
      */
     public function checkIfAuthorized()
     {
-        $acl = app('acl');
+        $roles = acl()->getRoles();
 
-        if (
-            $acl
-            && isset($acl->roles[Route::currentRouteName()])
-        ) {
-            bouncer()->allow($acl->roles[Route::currentRouteName()]);
+        if (isset($roles[Route::currentRouteName()])) {
+            bouncer()->allow($roles[Route::currentRouteName()]);
         }
     }
 }

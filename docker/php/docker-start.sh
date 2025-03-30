@@ -1,11 +1,8 @@
 #!/bin/bash
 composer install
-npm install && npm run dev
 
 php artisan migrate --force
-# php artisan db:seed --force
+php artisan db:seed --force
+php artisan storage:link
 
-#service cron start
-#
-#/usr/bin/supervisord -c  /etc/supervisor/supervisord.conf
 php-fpm -R

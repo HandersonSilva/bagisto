@@ -3,12 +3,14 @@
 namespace Webkul\Admin\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Webkul\Core\Contracts\Validations\CommaSeperatedInteger;
+use Webkul\Core\Rules\Decimal;
+use Webkul\Core\Rules\PhoneNumber;
+use Webkul\Core\Rules\PostCode;
 
 class ConfigurationForm extends FormRequest
 {
     /**
-     * Determine if the Configuraion is authorized to make this request.
+     * Determine if the Configuration is authorized to make this request.
      *
      * @return bool
      */
@@ -24,69 +26,39 @@ class ConfigurationForm extends FormRequest
      */
     public function rules()
     {
-        $this->rules = [];
+        return collect(request()->input('keys', []))->mapWithKeys(function ($item) {
+            $data = json_decode($item, true);
 
-        if (
-            request()->has('catalog.products.storefront.products_per_page')
-            && ! empty(request()->input('catalog.products.storefront.products_per_page'))
-        ) {
-            $this->rules = [
-                'catalog.products.storefront.products_per_page' => [new CommaSeperatedInteger],
-            ];
-        }
+            return collect($data['fields'])->mapWithKeys(function ($field) use ($data) {
+                $key = "{$data['key']}.{$field['name']}";
 
-        if (
-            request()->has('general.design.admin_logo.logo_image')
-            && ! request()->input('general.design.admin_logo.logo_image.delete')
-        ) {
-            $this->rules = array_merge($this->rules, [
-                'general.design.admin_logo.logo_image' => 'required|mimes:bmp,jpeg,jpg,png,webp|max:5000',
-            ]);
-        }
+                // Check delete key exist in the request
+                if (! $this->has("{$key}.delete")) {
+                    return [$key => $this->getValidationRules($field['validation'] ?? 'nullable')];
+                }
 
-        if (
-            request()->has('general.design.admin_logo.favicon')
-            && ! request()->input('general.design.admin_logo.favicon.delete')
-        ) {
-            $this->rules = array_merge($this->rules, [
-                'general.design.admin_logo.favicon' => 'required|mimes:bmp,jpeg,jpg,png,webp|max:5000',
-            ]);
-        }
-
-        if (
-            request()->has('sales.invoice_setttings.invoice_slip_design.logo')
-            && ! request()->input('sales.invoice_setttings.invoice_slip_design.logo.delete')
-        ) {
-            $this->rules = array_merge($this->rules, [
-                'sales.invoice_setttings.invoice_slip_design.logo' => 'required|mimes:bmp,jpeg,jpg,png,webp|max:5000',
-            ]);
-        }
-
-        return $this->rules;
+                return [];
+            })->toArray();
+        })->toArray();
     }
 
     /**
-     * Get the error messages for the defined validation rules.
+     * Transform validation rules into an array and map custom validation rules
      *
+     * @param  string|array  $validation
      * @return array
      */
-    public function messages()
+    protected function getValidationRules($validation)
     {
-        return [
-            'general.design.admin_logo.logo_image.mimes' => 'Invalid file format. Use only bmp, jpeg, jpg, png and webp.',
-        ];
-    }
+        $validations = is_array($validation) ? $validation : explode('|', $validation);
 
-    /**
-     * Set the attribute name.
-     */
-    public function attributes()
-    {
-        return [
-            'general.design.admin_logo.logo_image'             => 'Logo Image',
-            'general.design.admin_logo.favicon'                => 'Favicon Image',
-            'sales.invoice_setttings.invoice_slip_design.logo' => 'Invoice Logo',
-            'catalog.products.storefront.products_per_page'    => 'Product Per Page',
-        ];
+        return array_map(function ($rule) {
+            return match ($rule) {
+                'phone'    => new PhoneNumber,
+                'postcode' => new PostCode,
+                'decimal'  => new Decimal,
+                default    => $rule,
+            };
+        }, $validations);
     }
 }

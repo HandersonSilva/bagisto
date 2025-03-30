@@ -17,34 +17,36 @@ class Shipping
     /**
      * Collects rate from available shipping methods.
      *
-     * @return array
+     * @return array|bool
      */
     public function collectRates()
     {
-        if (! $cart = Cart::getCart()) {
+        if (! Cart::getCart()) {
             return false;
         }
 
         $this->removeAllShippingRates();
+
+        $ratesList = [];
 
         foreach (Config::get('carriers') as $shippingMethod) {
             $object = new $shippingMethod['class'];
 
             if ($rates = $object->calculate()) {
                 if (is_array($rates)) {
-                    $this->rates = array_merge($this->rates, $rates);
+                    $ratesList[] = $rates;
                 } else {
-                    $this->rates[] = $rates;
+                    $ratesList[] = [$rates];
                 }
             }
         }
 
+        $this->rates = array_merge(...$ratesList);
+
         $this->saveAllShippingRates();
 
         return [
-            'jump_to_section' => 'shipping',
             'shippingMethods' => $this->getGroupedAllShippingRates(),
-            'html'            => view('shop::checkout.onepage.shipping', ['shippingRateGroups' => $this->getGroupedAllShippingRates()])->render(),
         ];
     }
 
@@ -59,9 +61,7 @@ class Shipping
             return;
         }
 
-        foreach ($cart->shipping_rates()->get() as $rate) {
-            $rate->delete();
-        }
+        $cart->shipping_rates()->delete();
 
         $this->rates = [];
     }
@@ -79,20 +79,24 @@ class Shipping
 
         $shippingAddress = $cart->shipping_address;
 
-        if ($shippingAddress) {
+        if (! $shippingAddress) {
+            return;
+        }
 
-            foreach ($this->rates as $rate) {
-                $rate->cart_address_id = $shippingAddress->id;
+        foreach ($this->rates as $rate) {
+            $rate->cart_id = $cart->id;
+            $rate->cart_address_id = $shippingAddress->id;
+            $rate->price_incl_tax = $rate->price;
+            $rate->base_price_incl_tax = $rate->base_price;
 
-                $rate->save();
-            }
+            $rate->save();
         }
     }
 
     /**
      * Returns shipping rates, grouped by shipping method.
      *
-     * @return void
+     * @return array
      */
     public function getGroupedAllShippingRates()
     {
@@ -105,6 +109,8 @@ class Shipping
                     'rates'         => [],
                 ];
             }
+
+            $rate['base_formatted_price'] = core()->currency($rate->base_price);
 
             $rates[$rate->carrier]['rates'][] = $rate;
         }
@@ -143,7 +149,7 @@ class Shipping
      * Is method exist in active shipping methods.
      *
      * @param  string  $shippingMethodCode
-     * @return boolean
+     * @return bool
      */
     public function isMethodCodeExists($shippingMethodCode)
     {

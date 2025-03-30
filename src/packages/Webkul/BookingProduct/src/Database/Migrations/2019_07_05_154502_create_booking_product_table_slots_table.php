@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-class CreateBookingProductTableSlotsTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,8 @@ class CreateBookingProductTableSlotsTable extends Migration
     public function up()
     {
         Schema::create('booking_product_table_slots', function (Blueprint $table) {
-            $table->increments('id');
+            $table->id();
+            $table->unsignedInteger('booking_product_id');
             $table->string('price_type');
             $table->integer('guest_limit')->default(0);
             $table->integer('duration');
@@ -23,8 +24,12 @@ class CreateBookingProductTableSlotsTable extends Migration
             $table->boolean('same_slot_all_days')->nullable();
             $table->json('slots')->nullable();
 
-            $table->integer('booking_product_id')->unsigned();
-            $table->foreign('booking_product_id')->references('id')->on('booking_products')->onDelete('cascade');
+            $table->foreign('booking_product_id')
+                ->references('id')
+                ->on('booking_products')
+                ->onDelete('cascade');
+
+            $table->timestamps();
         });
     }
 
@@ -37,4 +42,4 @@ class CreateBookingProductTableSlotsTable extends Migration
     {
         Schema::dropIfExists('booking_product_table_slots');
     }
-}
+};

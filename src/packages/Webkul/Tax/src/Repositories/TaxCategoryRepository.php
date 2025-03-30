@@ -8,8 +8,6 @@ class TaxCategoryRepository extends Repository
 {
     /**
      * Specify model class name.
-     *
-     * @return string
      */
     public function model(): string
     {
@@ -17,18 +15,24 @@ class TaxCategoryRepository extends Repository
     }
 
     /**
-     * Attach or detach.
-     *
-     * @param  \Webkul\Tax\Contracts\TaxCategory  $taxCategory
-     * @param  array  $data
-     * @return bool
+     * Get the configuration options.
      */
-    public function attachOrDetach($taxCategory, $data)
+    public function getConfigOptions(): array
     {
-        $taxCategory->tax_rates;
+        $options = [
+            [
+                'title' => 'admin::app.configuration.index.sales.taxes.categories.none',
+                'value' => 0,
+            ],
+        ];
 
-        $this->model->findOrFail($taxCategory->id)->tax_rates()->sync($data);
+        foreach ($this->all() as $taxCategory) {
+            $options[] = [
+                'title' => $taxCategory->name,
+                'value' => $taxCategory->id,
+            ];
+        }
 
-        return true;
+        return $options;
     }
 }

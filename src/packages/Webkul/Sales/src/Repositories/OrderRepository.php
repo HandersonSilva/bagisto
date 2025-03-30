@@ -7,36 +7,33 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Webkul\Core\Eloquent\Repository;
+use Webkul\Product\Repositories\ProductCustomizableOptionRepository;
+use Webkul\Sales\Contracts\Order as OrderContract;
 use Webkul\Sales\Generators\OrderSequencer;
-use Webkul\Sales\Models\Order as OrderModel;
+use Webkul\Sales\Models\Order;
 
 class OrderRepository extends Repository
 {
     /**
      * Create a new repository instance.
      *
-     * @param  \Webkul\Sales\Repositories\OrderItemRepository  $orderItemRepository
-     * @param  \Webkul\Sales\Repositories\DownloadableLinkPurchasedRepository  $downloadableLinkPurchasedRepository
-     * @param  \Illuminate\Container\Container  $container
      * @return void
      */
     public function __construct(
         protected OrderItemRepository $orderItemRepository,
+        protected ProductCustomizableOptionRepository $productCustomizableOptionRepository,
         protected DownloadableLinkPurchasedRepository $downloadableLinkPurchasedRepository,
         Container $container
-    )
-    {
+    ) {
         parent::__construct($container);
     }
 
     /**
      * Specify model class name.
-     *
-     * @return string
      */
     public function model(): string
     {
-        return 'Webkul\Sales\Contracts\Order';
+        return OrderContract::class;
     }
 
     /**
@@ -51,52 +48,24 @@ class OrderRepository extends Repository
         try {
             Event::dispatch('checkout.order.save.before', [$data]);
 
-            if (
-                isset($data['customer'])
-                && $data['customer']
-            ) {
-                $data['customer_id'] = $data['customer']->id;
-                $data['customer_type'] = get_class($data['customer']);
-            } else {
-                unset($data['customer']);
-            }
-
-            if (
-                isset($data['channel'])
-                && $data['channel']
-            ) {
-                $data['channel_id'] = $data['channel']->id;
-                $data['channel_type'] = get_class($data['channel']);
-                $data['channel_name'] = $data['channel']->name;
-            } else {
-                unset($data['channel']);
-            }
-
-            $data['status'] = 'pending';
+            $data['status'] = Order::STATUS_PENDING;
 
             $order = $this->model->create(array_merge($data, ['increment_id' => $this->generateIncrementId()]));
 
             $order->payment()->create($data['payment']);
 
             if (isset($data['shipping_address'])) {
-                unset($data['shipping_address']['customer_id']);
-
                 $order->addresses()->create($data['shipping_address']);
             }
-
-            unset($data['billing_address']['customer_id']);
 
             $order->addresses()->create($data['billing_address']);
 
             foreach ($data['items'] as $item) {
-                Event::dispatch('checkout.order.orderitem.save.before', $data);
+                Event::dispatch('checkout.order.orderitem.save.before', $item);
 
                 $orderItem = $this->orderItemRepository->create(array_merge($item, ['order_id' => $order->id]));
 
-                if (
-                    isset($item['children'])
-                    && $item['children']
-                ) {
+                if (! empty($item['children'])) {
                     foreach ($item['children'] as $child) {
                         $this->orderItemRepository->create(array_merge($child, ['order_id' => $order->id, 'parent_id' => $orderItem->id]));
                     }
@@ -104,9 +73,11 @@ class OrderRepository extends Repository
 
                 $this->orderItemRepository->manageInventory($orderItem);
 
+                $this->orderItemRepository->manageCustomizableOptions($orderItem);
+
                 $this->downloadableLinkPurchasedRepository->saveLinks($orderItem, 'available');
 
-                Event::dispatch('checkout.order.orderitem.save.after', $data);
+                Event::dispatch('checkout.order.orderitem.save.after', $orderItem);
             }
 
             Event::dispatch('checkout.order.save.after', $order);
@@ -116,12 +87,12 @@ class OrderRepository extends Repository
 
             /* storing log for errors */
             Log::error(
-                'OrderRepository:createOrderIfNotThenRetry: ' . $e->getMessage(),
+                'OrderRepository:createOrderIfNotThenRetry: '.$e->getMessage(),
                 ['data' => $data]
             );
 
             /* recalling */
-            $this->createOrderIfNotThenRetry($data);
+            return $this->createOrderIfNotThenRetry($data);
         } finally {
             /* commit in each case */
             DB::commit();
@@ -133,7 +104,6 @@ class OrderRepository extends Repository
     /**
      * Create order.
      *
-     * @param  array  $data
      * @return \Webkul\Sales\Contracts\Order
      */
     public function create(array $data)
@@ -145,7 +115,7 @@ class OrderRepository extends Repository
      * Cancel order. This method should be independent as admin also can cancel the order.
      *
      * @param  \Webkul\Sales\Models\Order|int  $orderOrId
-     * @return \Webkul\Sales\Contracts\Order
+     * @return bool
      */
     public function cancel($orderOrId)
     {
@@ -175,9 +145,7 @@ class OrderRepository extends Repository
             }
 
             foreach ($orderItems as $orderItem) {
-                if ($orderItem->product) {
-                    $this->orderItemRepository->returnQtyToProductInventory($orderItem);
-                }
+                $this->orderItemRepository->returnQtyToProductInventory($orderItem);
 
                 if ($orderItem->qty_ordered) {
                     $orderItem->qty_canceled += $orderItem->qty_to_cancel;
@@ -220,7 +188,7 @@ class OrderRepository extends Repository
      * Is order in completed state.
      *
      * @param  \Webkul\Sales\Contracts\Order  $order
-     * @return void
+     * @return bool
      */
     public function isInCompletedState($order)
     {
@@ -240,12 +208,31 @@ class OrderRepository extends Repository
             $totalQtyCanceled += $item->qty_canceled;
         }
 
+        /**
+         * Canceled state.
+         */
+        if ($totalQtyOrdered === $totalQtyCanceled) {
+            return false;
+        }
+
+        /**
+         * Closed state.
+         */
+        if ($totalQtyOrdered === $totalQtyRefunded + $totalQtyCanceled) {
+            return false;
+        }
+
+        /**
+         * Completed state.
+         */
         if (
-            $totalQtyOrdered != ($totalQtyRefunded + $totalQtyCanceled)
-            && $totalQtyOrdered == $totalQtyInvoiced + $totalQtyCanceled
-            && $totalQtyOrdered == $totalQtyShipped + $totalQtyRefunded + $totalQtyCanceled
+            $totalQtyOrdered === $totalQtyInvoiced + $totalQtyCanceled
         ) {
-            return true;
+            if ($totalQtyInvoiced === $totalQtyShipped) {
+                return $totalQtyOrdered === $totalQtyShipped + $totalQtyCanceled;
+            }
+
+            return $totalQtyOrdered === $totalQtyShipped + $totalQtyRefunded;
         }
 
         /**
@@ -253,7 +240,7 @@ class OrderRepository extends Repository
          * then it can be considered as completed.
          */
         if (
-            $order->status === OrderModel::STATUS_COMPLETED
+            $order->status === Order::STATUS_COMPLETED
             && $totalQtyOrdered != $totalQtyRefunded
         ) {
             return true;
@@ -266,7 +253,7 @@ class OrderRepository extends Repository
      * Is order in cancelled state.
      *
      * @param  \Webkul\Sales\Contracts\Order  $order
-     * @return void
+     * @return bool
      */
     public function isInCanceledState($order)
     {
@@ -283,8 +270,8 @@ class OrderRepository extends Repository
     /**
      * Is order in closed state.
      *
-     * @param mixed $order
-     * @return void
+     * @param  mixed  $order
+     * @return bool
      */
     public function isInClosedState($order)
     {
@@ -303,7 +290,7 @@ class OrderRepository extends Repository
      * Update order status.
      *
      * @param  \Webkul\Sales\Contracts\Order  $order
-     * @param  string $orderState
+     * @param  string  $orderState
      * @return void
      */
     public function updateOrderStatus($order, $orderState = null)
@@ -313,20 +300,21 @@ class OrderRepository extends Repository
         if (! empty($orderState)) {
             $status = $orderState;
         } else {
-            $status = "processing";
+            $status = Order::STATUS_PROCESSING;
 
             if ($this->isInCompletedState($order)) {
-                $status = 'completed';
+                $status = Order::STATUS_COMPLETED;
             }
 
             if ($this->isInCanceledState($order)) {
-                $status = 'canceled';
+                $status = Order::STATUS_CANCELED;
             } elseif ($this->isInClosedState($order)) {
-                $status = 'closed';
+                $status = Order::STATUS_CLOSED;
             }
         }
 
         $order->status = $status;
+
         $order->save();
 
         Event::dispatch('sales.order.update-status.after', $order);
@@ -401,9 +389,9 @@ class OrderRepository extends Repository
      * @param  \Webkul\Sales\Models\Order|int  $orderOrId
      * @return \Webkul\Sales\Contracts\Order
      */
-    private function resolveOrderInstance($orderOrId)
+    protected function resolveOrderInstance($orderOrId)
     {
-        return $orderOrId instanceof OrderModel
+        return $orderOrId instanceof Order
             ? $orderOrId
             : $this->findOrFail($orderOrId);
     }

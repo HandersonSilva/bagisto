@@ -5,7 +5,7 @@ namespace Webkul\Admin\Validations;
 use Illuminate\Contracts\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Webkul\Category\Models\CategoryTranslationProxy;
-use Webkul\Product\Models\ProductFlatProxy;
+use Webkul\Product\Repositories\ProductRepository;
 
 class ProductCategoryUniqueSlug implements Rule
 {
@@ -34,9 +34,7 @@ class ProductCategoryUniqueSlug implements Rule
     public function __construct(
         protected $tableName = null,
         protected $id = null
-    )
-    {
-    }
+    ) {}
 
     /**
      * Determine if the validation rule passes.
@@ -113,21 +111,24 @@ class ProductCategoryUniqueSlug implements Rule
      */
     protected function isSlugExistsInProducts($slug)
     {
-        if (
-            $this->tableName
-            && $this->id
-            && $this->tableName === 'product_flat'
-        ) {
-            return ProductFlatProxy::modelClass()::where('product_id', '<>', $this->id)
-                ->where('url_key', $slug)
-                ->limit(1)
-                ->select(DB::raw(1))
-                ->exists();
+        if (core()->getConfigData('catalog.products.search.engine') == 'elastic') {
+            $searchEngine = core()->getConfigData('catalog.products.search.storefront_mode');
         }
 
-        return ProductFlatProxy::modelClass()::where('url_key', $slug)
-            ->limit(1)
-            ->select(DB::raw(1))
-            ->exists();
+        $product = app(ProductRepository::class)
+            ->setSearchEngine($searchEngine ?? 'database')
+            ->findBySlug($slug);
+
+        if (
+            $product
+            && $this->tableName
+            && $this->id
+            && $this->tableName === 'products'
+            && $this->id == $product->id
+        ) {
+            $product = null;
+        }
+
+        return (bool) $product;
     }
 }

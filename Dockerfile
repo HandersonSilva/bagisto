@@ -14,10 +14,19 @@ RUN apt-get update && apt-get install -y libexif-dev \
     && docker-php-ext-install intl \
     && docker-php-ext-enable intl
 
+# Install gd extension with WebP support
+RUN apt-get update && apt-get install -y libwebp-dev libjpeg-dev libpng-dev \
+    && docker-php-ext-configure gd --with-webp --with-jpeg \
+    && docker-php-ext-install gd \
+    && docker-php-ext-enable gd
+
 # Install extensions Decimal
 RUN apt install -y libmpdec-dev
 RUN pecl install decimal
 
+# Install calendar extension
+RUN docker-php-ext-install calendar \
+    && docker-php-ext-enable calendar
 
 RUN docker-php-ext-install pdo_mysql
 

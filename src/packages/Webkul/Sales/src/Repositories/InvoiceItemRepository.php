@@ -9,10 +9,8 @@ class InvoiceItemRepository extends Repository
 {
     /**
      * Specify Model class name
-     *
-     * @return string
      */
-    function model(): string
+    public function model(): string
     {
         return 'Webkul\Sales\Contracts\InvoiceItem';
     }
@@ -24,6 +22,10 @@ class InvoiceItemRepository extends Repository
     public function updateProductInventory($data)
     {
         if (! $data['product']) {
+            return;
+        }
+
+        if (! $data['product']->manage_stock) {
             return;
         }
 
@@ -45,7 +47,7 @@ class InvoiceItemRepository extends Repository
             ->orderBy('qty', 'desc')
             ->get();
 
-        foreach ($inventories as $key => $inventory) {
+        foreach ($inventories as $inventory) {
             if ($inventory->qty >= $data['qty']) {
                 $inventory->update(['qty' => $inventory->qty - $data['qty']]);
 

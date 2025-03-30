@@ -6,6 +6,11 @@ use Webkul\Core\Providers\CoreModuleServiceProvider;
 
 class ModuleServiceProvider extends CoreModuleServiceProvider
 {
+    /**
+     * Models.
+     *
+     * @var array
+     */
     protected $models = [
         \Webkul\BookingProduct\Models\BookingProduct::class,
         \Webkul\BookingProduct\Models\BookingProductDefaultSlot::class,

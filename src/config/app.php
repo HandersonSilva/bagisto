@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Facade;
-
 return [
 
     /*
@@ -42,6 +40,18 @@ return [
     */
 
     'debug' => env('APP_DEBUG', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Debug Allowed IPs
+    |--------------------------------------------------------------------------
+    |
+    | This value is used to allow the debug mode only for the specified IPs.
+    | This is useful when you want to debug the application on the production
+    | server without enabling it for everyone.
+    */
+
+    'debug_allowed_ips' => env('APP_DEBUG_ALLOWED_IPS', null),
 
     /*
     |--------------------------------------------------------------------------
@@ -94,18 +104,9 @@ return [
 
     'locale' => env('APP_LOCALE', 'en'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Application Fallback Locale
-    |--------------------------------------------------------------------------
-    |
-    | The fallback locale determines the locale to use when the current one
-    | is not available. You may change the value to correspond to any of
-    | the language folders that are provided through your application.
-    |
-    */
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
-    'fallback_locale' => 'en',
+    'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
     /*
     |--------------------------------------------------------------------------
@@ -155,162 +156,32 @@ return [
     |
     */
 
-    'key' => env('APP_KEY'),
-
     'cipher' => 'AES-256-CBC',
 
-    /**
-     * Code editor.
-     */
-    'editor' => 'vscode',
+    'key' => env('APP_KEY'),
 
-    /*
-     *Application Version
-     */
-    'version' => env('APP_VERSION', '1.x-dev'),
-
-    /**
-     * Blacklisting attributes while debugging
-     */
-    'debug_blacklist' => [
-        '_ENV' => [
-            'APP_KEY',
-            'DB_PASSWORD'
-        ],
-
-        '_SERVER' => [
-            'APP_KEY',
-            'DB_PASSWORD'
-        ],
-
-        '_POST' => [
-            'password'
-        ],
+    'previous_keys' => [
+        ...array_filter(
+            explode(',', env('APP_PREVIOUS_KEYS', ''))
+        ),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Autoloaded Service Providers
+    | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |
-    | The service providers listed here will be automatically loaded on the
-    | request to your application. Feel free to add your own services to
-    | this array to grant expanded functionality to your applications.
+    | These configuration options determine the driver used to determine and
+    | manage Laravel's "maintenance mode" status. The "cache" driver will
+    | allow maintenance mode to be controlled across multiple machines.
+    |
+    | Supported drivers: "file", "cache"
     |
     */
 
-    'providers' => [
-
-        /*
-         * Laravel Framework Service Providers.
-         */
-        Illuminate\Auth\AuthServiceProvider::class,
-        Illuminate\Broadcasting\BroadcastServiceProvider::class,
-        Illuminate\Bus\BusServiceProvider::class,
-        Illuminate\Cache\CacheServiceProvider::class,
-        Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
-        Illuminate\Cookie\CookieServiceProvider::class,
-        Illuminate\Database\DatabaseServiceProvider::class,
-        Illuminate\Encryption\EncryptionServiceProvider::class,
-        Illuminate\Filesystem\FilesystemServiceProvider::class,
-        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
-        Illuminate\Hashing\HashServiceProvider::class,
-        Illuminate\Mail\MailServiceProvider::class,
-        Illuminate\Notifications\NotificationServiceProvider::class,
-        Illuminate\Pagination\PaginationServiceProvider::class,
-        Illuminate\Pipeline\PipelineServiceProvider::class,
-        Illuminate\Queue\QueueServiceProvider::class,
-        Illuminate\Redis\RedisServiceProvider::class,
-        Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
-        Illuminate\Session\SessionServiceProvider::class,
-        Illuminate\Translation\TranslationServiceProvider::class,
-        Illuminate\Validation\ValidationServiceProvider::class,
-        Illuminate\View\ViewServiceProvider::class,
-
-        /*
-         * Package Service Providers.
-         */
-
-        Astrotomic\Translatable\TranslatableServiceProvider::class,
-        Intervention\Image\ImageServiceProvider::class,
-        Maatwebsite\Excel\ExcelServiceProvider::class,
-
-        /*
-         * Application Service Providers.
-         */
-        App\Providers\AppServiceProvider::class,
-        App\Providers\AuthServiceProvider::class,
-        // App\Providers\BroadcastServiceProvider::class,
-        App\Providers\EventServiceProvider::class,
-        App\Providers\RouteServiceProvider::class,
-
-        /**
-         * Repository Service Providers.
-         */
-        Prettus\Repository\Providers\RepositoryServiceProvider::class,
-        Konekt\Concord\ConcordServiceProvider::class,
-        Flynsarmy\DbBladeCompiler\DbBladeCompilerServiceProvider::class,
-        Barryvdh\DomPDF\ServiceProvider::class,
-
-        /**
-         * Webkul Package Service Providers.
-         */
-        Webkul\Theme\Providers\ThemeServiceProvider::class,
-        Webkul\User\Providers\UserServiceProvider::class,
-        Webkul\Admin\Providers\AdminServiceProvider::class,
-        Webkul\Ui\Providers\UiServiceProvider::class,
-        Webkul\Category\Providers\CategoryServiceProvider::class,
-        Webkul\Attribute\Providers\AttributeServiceProvider::class,
-        Webkul\Core\Providers\CoreServiceProvider::class,
-        Webkul\Core\Providers\EnvValidatorServiceProvider::class,
-        Webkul\Shop\Providers\ShopServiceProvider::class,
-        Webkul\Customer\Providers\CustomerServiceProvider::class,
-        Webkul\Inventory\Providers\InventoryServiceProvider::class,
-        Webkul\Product\Providers\ProductServiceProvider::class,
-        Webkul\Checkout\Providers\CheckoutServiceProvider::class,
-        Webkul\Shipping\Providers\ShippingServiceProvider::class,
-        Webkul\Payment\Providers\PaymentServiceProvider::class,
-        Webkul\Paypal\Providers\PaypalServiceProvider::class,
-        Webkul\Sales\Providers\SalesServiceProvider::class,
-        Webkul\Tax\Providers\TaxServiceProvider::class,
-        Webkul\CatalogRule\Providers\CatalogRuleServiceProvider::class,
-        Webkul\CartRule\Providers\CartRuleServiceProvider::class,
-        Webkul\Rule\Providers\RuleServiceProvider::class,
-        Webkul\CMS\Providers\CMSServiceProvider::class,
-        Webkul\Velocity\Providers\VelocityServiceProvider::class,
-        Webkul\BookingProduct\Providers\BookingProductServiceProvider::class,
-        Webkul\SocialLogin\Providers\SocialLoginServiceProvider::class,
-        Webkul\DebugBar\Providers\DebugBarServiceProvider::class,
-        Webkul\Marketing\Providers\MarketingServiceProvider::class,
-        Webkul\Notification\Providers\NotificationServiceProvider::class,
-        Webkul\Sitemap\Providers\SitemapServiceProvider::class
+    'maintenance' => [
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+        'store'  => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Class Aliases
-    |--------------------------------------------------------------------------
-    |
-    | This array of class aliases will be registered when this application
-    | is started. However, feel free to register as many as you wish as
-    | the aliases are "lazy" loaded so they don't hinder performance.
-    |
-    */
-
-    'aliases' => Facade::defaultAliases()->merge([
-        'Captcha' => Webkul\Customer\Facades\Captcha::class,
-        'Cart' => Webkul\Checkout\Facades\Cart::class,
-        'Concord' => Konekt\Concord\Facades\Concord::class,
-        'Core' => Webkul\Core\Facades\Core::class,
-        'Datagrid' => Webkul\Ui\DataGrid\Facades\DataGrid::class,
-        'DbView' => Flynsarmy\DbBladeCompiler\Facades\DbView::class,
-        'Debugbar' => Barryvdh\Debugbar\Facades\Debugbar::class,
-        'Excel' => Maatwebsite\Excel\Facades\Excel::class,
-        'Helper'  => Konekt\Concord\Facades\Helper::class,
-        'Image' => Intervention\Image\Facades\Image::class,
-        'PDF' => Barryvdh\DomPDF\Facade::class,
-        'ProductImage' => Webkul\Product\Facades\ProductImage::class,
-        'ProductVideo' => Webkul\Product\Facades\ProductVideo::class,
-        'Redis' => Illuminate\Support\Facades\Redis::class,
-    ])->toArray(),
 ];

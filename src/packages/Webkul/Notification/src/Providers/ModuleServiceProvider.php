@@ -2,11 +2,16 @@
 
 namespace Webkul\Notification\Providers;
 
-use Konekt\Concord\BaseModuleServiceProvider;
+use Webkul\Core\Providers\CoreModuleServiceProvider;
 
-class ModuleServiceProvider extends BaseModuleServiceProvider
+class ModuleServiceProvider extends CoreModuleServiceProvider
 {
+    /**
+     * Models.
+     *
+     * @var array
+     */
     protected $models = [
-        \Webkul\Notification\Models\Notification::class
+        \Webkul\Notification\Models\Notification::class,
     ];
 }

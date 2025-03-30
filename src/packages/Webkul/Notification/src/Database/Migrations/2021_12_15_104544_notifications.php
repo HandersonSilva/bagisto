@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class Notifications extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -18,8 +18,9 @@ class Notifications extends Migration
             $table->string('type');
             $table->boolean('read')->default(0);
             $table->integer('order_id')->unsigned();
-            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
             $table->timestamps();
+
+            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
         });
     }
 
@@ -32,4 +33,4 @@ class Notifications extends Migration
     {
         Schema::dropIfExists('notifications');
     }
-}
+};

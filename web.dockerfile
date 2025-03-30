@@ -9,4 +9,4 @@ COPY ./src /var/www/html
 WORKDIR /var/www/html
 
 #install node dependencies
-RUN npm install && npm run prod
+#RUN npm install && npm run build

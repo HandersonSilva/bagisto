@@ -10,28 +10,23 @@ class CatalogRuleIndex
     /**
      * Create a new helper instance.
      *
-     * @param  \Webkul\CatalogRule\Repositories\CatalogRuleRepository  $catalogRuleRepository
-     * @param  \Webkul\CatalogRuleProduct\Helpers\CatalogRuleProduct  $catalogRuleProductHelper
-     * @param  \Webkul\CatalogRuleProduct\Helpers\CatalogRuleProductPrice  $catalogRuleProductPriceHelper
      * @return void
      */
     public function __construct(
         protected CatalogRuleRepository $catalogRuleRepository,
         protected CatalogRuleProduct $catalogRuleProductHelper,
         protected CatalogRuleProductPrice $catalogRuleProductPriceHelper
-    )
-    {
-    }
+    ) {}
 
     /**
-     * Full reindex
+     * Full re-index
      *
      * @return void
      */
-    public function reindexComplete()
+    public function reIndexComplete()
     {
         try {
-            $this->cleanIndexes();
+            $this->cleanProductIndices();
 
             foreach ($this->getCatalogRules() as $rule) {
                 $this->catalogRuleProductHelper->insertRuleProduct($rule);
@@ -44,12 +39,42 @@ class CatalogRuleIndex
     }
 
     /**
-     * Full reindex
+     * Re-index rule indices
+     *
+     * @param  \Webkul\CatalogRule\Contracts\CatalogRule  $rule
+     * @return void
+     */
+    public function reIndexRule($rule)
+    {
+        $this->cleanRuleIndices($rule);
+
+        $startsFrom = $rule->starts_from ? Carbon::createFromTimeString($rule->starts_from.' 00:00:01') : null;
+
+        $endsTill = $rule->ends_till ? Carbon::createFromTimeString($rule->ends_till.' 23:59:59') : null;
+
+        if (
+            (
+                ! $startsFrom
+                || $startsFrom <= Carbon::now()
+            )
+            && (
+                ! $endsTill
+                || $endsTill >= Carbon::now()
+            )
+        ) {
+            $this->catalogRuleProductHelper->insertRuleProduct($rule);
+        }
+
+        $this->catalogRuleProductPriceHelper->indexRuleProductPrice(1000);
+    }
+
+    /**
+     * Re-index single product
      *
      * @param  \Webkul\Product\Contracts\Product  $product
      * @return void
      */
-    public function reindexProduct($product)
+    public function reIndexProduct($product)
     {
         try {
             if (! $product->getTypeInstance()->priceRuleCanBeApplied()) {
@@ -60,7 +85,7 @@ class CatalogRuleIndex
                 ? $product->getTypeInstance()->getChildrenIds()
                 : [$product->id];
 
-            $this->cleanIndexes($productIds);
+            $this->cleanProductIndices($productIds);
 
             foreach ($this->getCatalogRules() as $rule) {
                 $this->catalogRuleProductHelper->insertRuleProduct($rule, 1000, $product);
@@ -73,16 +98,29 @@ class CatalogRuleIndex
     }
 
     /**
-     * Deletes catalog rule product and catalog rule product price indexes
+     * Clean rule indices
+     *
+     * @param  \Webkul\CatalogRule\Contracts\CatalogRule  $rule
+     * @return void
+     */
+    public function cleanRuleIndices($rule)
+    {
+        $this->catalogRuleProductHelper->cleanRuleIndices($rule);
+
+        $this->catalogRuleProductPriceHelper->cleanProductPriceIndices();
+    }
+
+    /**
+     * Clean products indices
      *
      * @param  array  $productIds
      * @return void
      */
-    public function cleanIndexes($productIds = [])
+    public function cleanProductIndices($productIds = [])
     {
-        $this->catalogRuleProductHelper->cleanProductIndex($productIds);
+        $this->catalogRuleProductHelper->cleanProductIndices($productIds);
 
-        $this->catalogRuleProductPriceHelper->cleanProductPriceIndex($productIds);
+        $this->catalogRuleProductPriceHelper->cleanProductPriceIndices($productIds);
     }
 
     /**
@@ -92,22 +130,16 @@ class CatalogRuleIndex
      */
     public function getCatalogRules()
     {
-        static $catalogRules;
-
-        if ($catalogRules) {
-            return $catalogRules;
-        }
-
-        $catalogRules = $this->catalogRuleRepository->scopeQuery(function($query) {
+        $catalogRules = $this->catalogRuleRepository->scopeQuery(function ($query) {
             return $query->where(function ($query1) {
                 $query1->where('catalog_rules.starts_from', '<=', Carbon::now()->format('Y-m-d'))
-                        ->orWhereNull('catalog_rules.starts_from');
+                    ->orWhereNull('catalog_rules.starts_from');
             })
-            ->where(function ($query2) {
-                $query2->where('catalog_rules.ends_till', '>=', Carbon::now()->format('Y-m-d'))
+                ->where(function ($query2) {
+                    $query2->where('catalog_rules.ends_till', '>=', Carbon::now()->format('Y-m-d'))
                         ->orWhereNull('catalog_rules.ends_till');
-            })
-            ->orderBy('sort_order', 'asc');
+                })
+                ->orderBy('sort_order', 'asc');
         })->findWhere(['status' => 1]);
 
         return $catalogRules;

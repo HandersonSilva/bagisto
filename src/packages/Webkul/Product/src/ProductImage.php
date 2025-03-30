@@ -3,37 +3,29 @@
 namespace Webkul\Product;
 
 use Illuminate\Support\Facades\Storage;
-use Webkul\Product\Helpers\AbstractProduct;
+use League\Flysystem\Local\LocalFilesystemAdapter;
+use Webkul\Customer\Contracts\Wishlist;
 use Webkul\Product\Repositories\ProductRepository;
 
-class ProductImage extends AbstractProduct
+class ProductImage
 {
     /**
      * Create a new helper instance.
      *
-     * @param  \Webkul\Product\Repositories\ProductRepository  $productRepository
      * @return void
      */
-    public function __construct(protected ProductRepository $productRepository)
-    {
-    }
+    public function __construct(protected ProductRepository $productRepository) {}
 
     /**
      * Retrieve collection of gallery images.
      *
-     * @param  \Webkul\Product\Contracts\Product|\Webkul\Product\Contracts\ProductFlat  $product
+     * @param  \Webkul\Product\Contracts\Product  $product
      * @return array
      */
     public function getGalleryImages($product)
     {
-        static $loadedGalleryImages = [];
-
         if (! $product) {
             return [];
-        }
-
-        if (array_key_exists($product->id, $loadedGalleryImages)) {
-            return $loadedGalleryImages[$product->id];
         }
 
         $images = [];
@@ -49,7 +41,7 @@ class ProductImage extends AbstractProduct
         if (
             ! $product->parent_id
             && ! count($images)
-            && ! count($product->videos)
+            && ! count($product->videos ?? [])
         ) {
             $images[] = $this->getFallbackImageUrls();
         }
@@ -63,18 +55,18 @@ class ProductImage extends AbstractProduct
             $images = $this->getGalleryImages($product->parent);
         }
 
-        return $loadedGalleryImages[$product->id] = $images;
+        return $images;
     }
 
     /**
-     * Get product varient image if available otherwise product base image.
+     * Get product variant image if available otherwise product base image.
      *
      * @param  \Webkul\Customer\Contracts\Wishlist  $item
      * @return array
      */
     public function getProductImage($item)
     {
-        if ($item instanceof \Webkul\Customer\Contracts\Wishlist) {
+        if ($item instanceof Wishlist) {
             if (isset($item->additional['selected_configurable_option'])) {
                 $product = $this->productRepository->find($item->additional['selected_configurable_option']);
             } else {
@@ -91,23 +83,17 @@ class ProductImage extends AbstractProduct
      * This method will first check whether the gallery images are already
      * present or not. If not then it will load from the product.
      *
-     * @param  \Webkul\Product\Contracts\Product|\Webkul\Product\Contracts\ProductFlat  $product
+     * @param  \Webkul\Product\Contracts\Product  $product
      * @param  array
      * @return array
      */
-    public function getProductBaseImage($product, array $galleryImages = null)
+    public function getProductBaseImage($product, ?array $galleryImages = null)
     {
-        static $loadedBaseImages = [];
-
         if (! $product) {
             return;
         }
 
-        if (array_key_exists($product->id, $loadedBaseImages)) {
-            return $loadedBaseImages[$product->id];
-        }
-
-        return $loadedBaseImages[$product->id] = $galleryImages
+        return $galleryImages
             ? $galleryImages[0]
             : $this->otherwiseLoadFromProduct($product);
     }
@@ -115,12 +101,12 @@ class ProductImage extends AbstractProduct
     /**
      * Load product's base image.
      *
-     * @param  \Webkul\Product\Contracts\Product|\Webkul\Product\Contracts\ProductFlat  $product
+     * @param  \Webkul\Product\Contracts\Product  $product
      * @return array
      */
     protected function otherwiseLoadFromProduct($product)
     {
-        $images = $product ? $product->images : null;
+        $images = $product?->images;
 
         return $images && $images->count()
             ? $this->getCachedImageUrls($images[0]->path)
@@ -131,7 +117,6 @@ class ProductImage extends AbstractProduct
      * Get cached urls configured for intervention package.
      *
      * @param  string  $path
-     * @return array
      */
     private function getCachedImageUrls($path): array
     {
@@ -145,35 +130,43 @@ class ProductImage extends AbstractProduct
         }
 
         return [
-            'small_image_url'    => url('cache/small/' . $path),
-            'medium_image_url'   => url('cache/medium/' . $path),
-            'large_image_url'    => url('cache/large/' . $path),
-            'original_image_url' => url('cache/original/' . $path),
+            'small_image_url'    => url('cache/small/'.$path),
+            'medium_image_url'   => url('cache/medium/'.$path),
+            'large_image_url'    => url('cache/large/'.$path),
+            'original_image_url' => url('cache/original/'.$path),
         ];
     }
 
     /**
      * Get fallback urls.
-     *
-     * @return array
      */
     private function getFallbackImageUrls(): array
     {
+        $smallImageUrl = core()->getConfigData('catalog.products.cache_small_image.url')
+                        ? Storage::url(core()->getConfigData('catalog.products.cache_small_image.url'))
+                        : bagisto_asset('images/small-product-placeholder.webp', 'shop');
+
+        $mediumImageUrl = core()->getConfigData('catalog.products.cache_medium_image.url')
+                        ? Storage::url(core()->getConfigData('catalog.products.cache_medium_image.url'))
+                        : bagisto_asset('images/medium-product-placeholder.webp', 'shop');
+
+        $largeImageUrl = core()->getConfigData('catalog.products.cache_large_image.url')
+                        ? Storage::url(core()->getConfigData('catalog.products.cache_large_image.url'))
+                        : bagisto_asset('images/large-product-placeholder.webp', 'shop');
+
         return [
-            'small_image_url'    => asset('vendor/webkul/ui/assets/images/product/small-product-placeholder.webp'),
-            'medium_image_url'   => asset('vendor/webkul/ui/assets/images/product/meduim-product-placeholder.webp'),
-            'large_image_url'    => asset('vendor/webkul/ui/assets/images/product/large-product-placeholder.webp'),
-            'original_image_url' => asset('vendor/webkul/ui/assets/images/product/large-product-placeholder.webp'),
+            'small_image_url'    => $smallImageUrl,
+            'medium_image_url'   => $mediumImageUrl,
+            'large_image_url'    => $largeImageUrl,
+            'original_image_url' => bagisto_asset('images/large-product-placeholder.webp', 'shop'),
         ];
     }
 
     /**
      * Is driver local.
-     *
-     * @return bool
      */
     private function isDriverLocal(): bool
     {
-        return Storage::getAdapter() instanceof \League\Flysystem\Local\LocalFilesystemAdapter;
+        return Storage::getAdapter() instanceof LocalFilesystemAdapter;
     }
 }

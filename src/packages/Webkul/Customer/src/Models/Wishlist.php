@@ -4,7 +4,9 @@ namespace Webkul\Customer\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Webkul\Core\Models\ChannelProxy;
 use Webkul\Customer\Contracts\Wishlist as WishlistContract;
+use Webkul\Customer\Database\Factories\CustomerWishlistFactory;
 use Webkul\Product\Models\ProductProxy;
 
 class Wishlist extends Model implements WishlistContract
@@ -16,7 +18,7 @@ class Wishlist extends Model implements WishlistContract
      *
      * @var string
      */
-    protected $table = 'wishlist';
+    protected $table = 'wishlist_items';
 
     /**
      * The attributes that should be cast.
@@ -41,11 +43,31 @@ class Wishlist extends Model implements WishlistContract
     /**
      * The product that belong to the wishlist.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function product()
     {
-        return $this->hasOne(ProductProxy::modelClass(), 'id', 'product_id');
+        return $this->belongsTo(ProductProxy::modelClass());
+    }
+
+    /**
+     * The Channel that belong to the wishlist.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function channel()
+    {
+        return $this->hasOne(ChannelProxy::modelClass(), 'id', 'channel_id');
+    }
+
+    /**
+     * The Customer that belong to the wishlist.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function customer()
+    {
+        return $this->belongsTo(CustomerProxy::modelClass(), 'customer_id');
     }
 
     /**
@@ -55,6 +77,6 @@ class Wishlist extends Model implements WishlistContract
      */
     protected static function newFactory()
     {
-        return \Webkul\Customer\Database\Factories\CustomerWishlistFactory::new ();
+        return CustomerWishlistFactory::new();
     }
 }

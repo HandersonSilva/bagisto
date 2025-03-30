@@ -3,42 +3,40 @@
 namespace Webkul\Product\Repositories;
 
 use Illuminate\Container\Container;
-use Webkul\Core\Eloquent\Repository;
 use Illuminate\Support\Str;
+use Webkul\Core\Eloquent\Repository;
+use Webkul\Product\Contracts\ProductBundleOption;
 
 class ProductBundleOptionRepository extends Repository
 {
     /**
      * Create a new repository instance.
      *
-     * @param  Webkul\Product\Repositories\ProductBundleOptionProductRepository  $productBundleOptionProductRepository
-     * @param  \Illuminate\Container\Container  $container
      * @return void
      */
     public function __construct(
         protected ProductBundleOptionProductRepository $productBundleOptionProductRepository,
         Container $container
-    )
-    {
+    ) {
         parent::__construct($container);
     }
 
     /**
-     * Specify Model class name
-     *
-     * @return string
+     * Specify model class name.
      */
     public function model(): string
     {
-        return 'Webkul\Product\Contracts\ProductBundleOption';
+        return ProductBundleOption::class;
     }
 
     /**
+     * Save bundle options.
+     *
      * @param  array  $data
      * @param  \Webkul\Product\Contracts\Product  $product
      * @return void
      */
-    public function saveBundleOptons($data, $product)
+    public function saveBundleOptions($data, $product)
     {
         $previousBundleOptionIds = $product->bundle_options()->pluck('id');
 
@@ -58,7 +56,7 @@ class ProductBundleOptionRepository extends Repository
                     $this->update($bundleOptionInputs, $bundleOptionId);
                 }
 
-                $this->productBundleOptionProductRepository->saveBundleOptonProducts($bundleOptionInputs, $productBundleOption);
+                $this->productBundleOptionProductRepository->saveBundleOptionProducts($bundleOptionInputs, $productBundleOption);
             }
         }
 
