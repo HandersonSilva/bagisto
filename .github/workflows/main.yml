@@ -65,7 +65,7 @@ jobs:
           yq e -i '.spec.template.spec.containers[0].image = strenv(CONTAINER_IMAGE_NAME)' ./k3s/deployment.yaml
           echo 'Container image APP tag updated in /k3s/deployment.yaml'
           echo 'Set ingress host'
-          yq e -i '.spec.rules[0].host = "switchsoftware.com.br"' ./k3s/nginx-ingress.yaml
+          yq e -i '.spec.rules[0].host = "loja.switchsoftware.com.br"' ./k3s/nginx-ingress.yaml
           git config --global user.email "handersonsylva@gmail.com"
           git config --global user.name "Handerson Silva"
           git add .
