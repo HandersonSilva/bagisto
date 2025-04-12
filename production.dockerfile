@@ -40,8 +40,5 @@ RUN chmod +x /docker/docker-start-production.sh \
 
 EXPOSE 9000
 
-# Apply cron job
-RUN crontab /etc/cron.d/crontab
-
 # Script de inicialização do container
 ENTRYPOINT ["/docker/docker-start-production.sh"]
