@@ -29,9 +29,6 @@ WORKDIR /var/www/html
 
 RUN composer install --no-scripts
 
-#install node dependencies
-RUN npm install && npm run production
-
 RUN chmod -R 777 /var/www/html/storage
 RUN chmod -R 777 /var/www/html/bootstrap
 RUN chmod -R 777 /var/log/supervisor
