@@ -1,0 +1,73 @@
+on:
+  push:
+    branches:
+      - main
+name: Deploy Bagisto to production
+jobs:
+  build:
+    name: Build and Push image production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/staging.key
+          chmod 600 ~/.ssh/staging.key
+          cat >>~/.ssh/config <<END
+          Host staging
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/staging.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.TARGET_USER }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.TARGET_HOST }}
+      - name: Check SSH
+        run: ssh staging 'rm -rf apps/production/bagisto && ls -l apps/production'
+      - name: Checkout code
+        run: ssh staging 'cd apps/production && git clone git@github.com:HandersonSilva/bagisto.git --branch main'
+      - name: Export APP_VERSION
+        run: ssh staging 'cd apps/production/bagisto && export BAGISTO_PRODUCTION_APP_VERSION="$(git describe --tags --first-parent --always)" && echo $BAGISTO_PRODUCTION_APP_VERSION'
+      - name: Create image APP
+        run: ssh staging 'cd apps/production/bagisto && export BAGISTO_PRODUCTION_APP_VERSION="$(git describe --tags --first-parent --always)" && docker build -t handersonsilva/switch-software:bagisto-production-app-$BAGISTO_PRODUCTION_APP_VERSION -f production.dockerfile .'
+      - name: Push image APP
+        run: ssh staging 'cd apps/production/bagisto && export BAGISTO_PRODUCTION_APP_VERSION="$(git describe --tags --first-parent --always)" && docker push handersonsilva/switch-software:bagisto-production-app-$BAGISTO_PRODUCTION_APP_VERSION'
+      - name: Create image WEB
+        run: ssh staging 'cd apps/production/bagisto && export BAGISTO_PRODUCTION_APP_VERSION="$(git describe --tags --first-parent --always)" && docker build -t handersonsilva/switch-software:bagisto-production-web-$BAGISTO_PRODUCTION_APP_VERSION -f web.dockerfile .'
+      - name: Push image WEB
+        run: ssh staging 'cd apps/production/bagisto && export BAGISTO_PRODUCTION_APP_VERSION="$(git describe --tags --first-parent --always)" && docker push handersonsilva/switch-software:bagisto-production-web-$BAGISTO_PRODUCTION_APP_VERSION'
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/download/v4.12.0/yq_linux_amd64 -O /usr/bin/yq && chmod +x /usr/bin/yq
+          yq --version
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          author_name: Handerson Silva
+          author_email: handersonsylva@gmail.com
+      - name: Update image tag in git repository
+        run: |
+          git checkout main
+          git pull
+          export APP_VERSION="$(git describe --tags --first-parent --always)"
+          echo New Version : $APP_VERSION
+          export CONTAINER_IMAGE_NAME_WEB="handersonsilva/switch-software:bagisto-production-web-$APP_VERSION"
+          export CONTAINER_IMAGE_NAME="handersonsilva/switch-software:bagisto-production-app-$APP_VERSION"
+          echo New container image web tag: $CONTAINER_IMAGE_NAME_WEB
+          echo New container image tag: $CONTAINER_IMAGE_NAME
+          echo Update version yaml
+          yq e -i '.data.APP_VERSION = strenv(APP_VERSION)' ./k3s/dinamic-configmap.yaml
+          echo 'APP_VERSION updated in /k3s/dinamic-configmap.yaml'
+          yq e -i '.spec.template.spec.containers[0].image = strenv(CONTAINER_IMAGE_NAME_WEB)' ./k3s/nginx-deployment.yaml
+          echo 'Container image WEB tag updated in /k3s/nginx-deployment.yaml'
+          yq e -i '.spec.template.spec.containers[0].image = strenv(CONTAINER_IMAGE_NAME)' ./k3s/deployment.yaml
+          echo 'Container image APP tag updated in /k3s/deployment.yaml'
+          echo 'Set ingress host'
+          yq e -i '.spec.rules[0].host = "switchsoftware.com.br"' ./k3s/nginx-ingress.yaml
+          git config --global user.email "handersonsylva@gmail.com"
+          git config --global user.name "Handerson Silva"
+          git add .
+          git commit -m "refactor - updated environment with container image - $CONTAINER_IMAGE_NAME"
+          git push

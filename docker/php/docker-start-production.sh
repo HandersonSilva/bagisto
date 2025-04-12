@@ -1,8 +1,7 @@
 #!/bin/bash
-php artisan view:clear
-php artisan config:clear
-php artisan route:clear
-php artisan optimize:clear
-#php artisan config:cache
+php artisan migrate --force
+php artisan db:seed --force
+
+touch /var/www/html/storage/logs/laravel.log && chmod -R 777 /var/www/html/storage/logs/laravel.log
 
 /usr/bin/supervisord -c  /etc/supervisor/supervisord.conf

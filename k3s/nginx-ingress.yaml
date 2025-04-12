@@ -1,0 +1,21 @@
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-bagisto-web
+  namespace: bagisto
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - host: switchsoftware.com.br
+      http:
+        paths:
+          - backend:
+              service:
+                name: svc-bagisto-web
+                port:
+                  number: 80
+            path: /
+            pathType: Prefix

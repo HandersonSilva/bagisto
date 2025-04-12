@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-bagisto-web
+  namespace: bagisto
+  labels:
+    tier: backend
+    app: bagisto-web
+spec:
+  type: ClusterIP #NodePort, ClusterIP
+  ports:
+    - port: 80
+  selector:
+    tier: backend
+    app: bagisto-web

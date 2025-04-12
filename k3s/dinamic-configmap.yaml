@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bagisto-dinamic-configmap
+  namespace: bagisto
+data:
+  APP_VERSION: "ba20da7a"
