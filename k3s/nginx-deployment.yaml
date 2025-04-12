@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: bagisto-web-container
-          image: ""
+          image: "handersonsilva/switch-software:bagisto-production-web-3e37775"
           ports:
             - containerPort: 80
           resources:
