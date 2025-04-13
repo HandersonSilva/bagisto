@@ -15,7 +15,6 @@ ARG USER_ID=1000
 
 #supervisor
 COPY ./docker/php/supervisord.conf /etc/supervisor
-COPY ./docker/config/* /etc/supervisor/conf.d
 
 # Copiando scripts e config necessários para dentro da imagem.
 COPY ./docker/php/docker-start-production.sh /docker/docker-start-production.sh
@@ -31,7 +30,6 @@ RUN composer install --no-scripts
 
 RUN chmod -R 777 /var/www/html/storage
 RUN chmod -R 777 /var/www/html/bootstrap
-RUN chmod -R 777 /var/log/supervisor
 
 # Altera permissão de execução para o script entrypoint
 RUN chmod +x /docker/docker-start-production.sh \
