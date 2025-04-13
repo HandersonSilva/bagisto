@@ -107,7 +107,7 @@ class ThemeCustomizationRepository extends Repository
                 }
 
                 $options['images'][] = [
-                    'image' => 'storage/'.$path,
+                    'image' => $path,
                     'link'  => $image['link'],
                     'title' => $image['title'],
                 ];

@@ -181,7 +181,16 @@ return [
 
     'maintenance' => [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
-        'store'  => env('APP_MAINTENANCE_STORE', 'database'),
+        'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+
+    /*
+  |--------------------------------------------------------------------------
+  | Url assets
+  |--------------------------------------------------------------------------
+  |
+  */
+
+    'url_assets' => env('CLOUDFLARE_R2_URL') . env('CLOUDFLARE_R2_PREFIX'),
 
 ];

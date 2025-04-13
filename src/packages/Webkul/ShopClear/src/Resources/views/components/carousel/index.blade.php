@@ -13,7 +13,7 @@
     >
         <div class="relative m-auto flex w-full overflow-hidden">
             <!-- Slider -->
-            <div 
+            <div
                 class="inline-flex translate-x-0 cursor-pointer transition-transform duration-700 ease-out will-change-transform"
                 ref="sliderContainer"
             >
@@ -26,8 +26,8 @@
                     <x-shop::media.images.lazy
                         class="aspect-[2.743/1] max-h-full w-full max-w-full select-none transition-transform duration-300 ease-in-out"
                         ::lazy="false"
-                        ::src="image.image"
-                        ::srcset="image.image + ' 1920w, ' + image.image.replace('storage', 'cache/large') + ' 1280w,' + image.image.replace('storage', 'cache/medium') + ' 1024w, ' + image.image.replace('storage', 'cache/small') + ' 525w'"
+                        ::src="'{{ config('app.url_assets') }}/' + image.image"
+                        ::srcset="'{{ config('app.url_assets') }}/' + image.image"
                         ::alt="image?.title"
                         tabindex="0"
                     />
