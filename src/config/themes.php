@@ -24,6 +24,18 @@ return [
                 'package_assets_directory' => 'src/Resources/assets',
             ],
         ],
+
+        'shop-clear' => [
+            'name'        => 'Shop Clear',
+            'assets_path' => 'public/themes/shop-clear/default',
+            'views_path'  => 'resources/themes/shop-clear/views',
+
+            'vite'        => [
+                'hot_file'                 => 'shop-shop-clear.hot',
+                'build_directory'          => 'themes/shop/shop-clear/build',
+                'package_assets_directory' => 'src/Resources/assets',
+            ],
+        ],
     ],
 
     /*
