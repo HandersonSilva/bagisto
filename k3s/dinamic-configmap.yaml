@@ -4,4 +4,4 @@ metadata:
   name: bagisto-dinamic-configmap
   namespace: bagisto
 data:
-  APP_VERSION: "v1.2.5"
+  APP_VERSION: "v1.2.6"

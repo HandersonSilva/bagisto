@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: bagisto-container
-          image: "handersonsilva/switch-software:bagisto-production-app-v1.2.5"
+          image: "handersonsilva/switch-software:bagisto-production-app-v1.2.6"
           ports:
             - containerPort: 9000
           resources:
