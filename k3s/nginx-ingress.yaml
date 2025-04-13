@@ -9,7 +9,7 @@ metadata:
     ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
-    - host: switchsoftware.com.br
+    - host: loja.switchsoftware.com.br
       http:
         paths:
           - backend:
