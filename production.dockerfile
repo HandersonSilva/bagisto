@@ -38,6 +38,9 @@ RUN chmod +x /docker/docker-start-production.sh \
         # Cria grupo, usuário e o atribui ao grupo
        && useradd -u ${USER_ID} -g www-data --shell /bin/bash --create-home switch
 
+# Define o usuário
+USER switch
+
 EXPOSE 9000
 
 # Script de inicialização do container
