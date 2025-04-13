@@ -5,6 +5,4 @@ touch .env && grep -E "^($(cut -d= -f1 .env.example | paste -sd '|' -))=" <(env)
 
 php artisan migrate --force
 
-touch /var/www/html/storage/logs/laravel.log && chmod -R 777 /var/www/html/storage/logs/laravel.log
-
-/usr/bin/supervisord -c  /etc/supervisor/supervisord.conf
+supervisord
