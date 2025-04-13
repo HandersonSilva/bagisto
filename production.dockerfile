@@ -41,6 +41,9 @@ RUN chmod +x /docker/docker-start-production.sh \
 # Define o usuário
 USER switch
 
+# Inicia o Supervisor
+RUN mkdir /home/switch/supervisor
+
 EXPOSE 9000
 
 # Script de inicialização do container
