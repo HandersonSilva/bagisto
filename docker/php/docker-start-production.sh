@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Replace environment variables in configuration files
-touch .env && env > .env
+touch .env && grep -E "^($(cut -d= -f1 .env.example | paste -sd '|' -))=" <(env) > .env
 
 php artisan migrate --force
 php artisan db:seed --force
