@@ -15,7 +15,7 @@
                         <p class="text-base font-semibold text-gray-800 dark:text-white">
                             @lang('admin::app.settings.themes.edit.slider')
                         </p>
-                        
+
                         <p class="text-xs font-medium text-gray-500 dark:text-gray-300">
                             @lang('admin::app.settings.themes.edit.slider-description')
                         </p>
@@ -68,9 +68,9 @@
                         :name="'{{ $currentLocale->code }}[options]['+ index +'][image]'"
                         :value="image.image"
                     />
-                
+
                     <!-- Details -->
-                    <div 
+                    <div
                         class="flex cursor-pointer justify-between gap-2.5 py-5"
                         :class="{
                             'border-b border-slate-300 dark:border-gray-800': index < sliders.images.length - 1
@@ -79,7 +79,7 @@
                         <div class="flex gap-2.5">
                             <div class="grid place-content-start gap-1.5">
                                 <p class="text-gray-600 dark:text-gray-300">
-                                    @lang('admin::app.settings.themes.edit.image-title'): 
+                                    @lang('admin::app.settings.themes.edit.image-title'):
 
                                     <span class="text-gray-600 transition-all dark:text-gray-300">
                                         @{{ image.title }}
@@ -87,7 +87,7 @@
                                 </p>
 
                                 <p class="text-gray-600 dark:text-gray-300">
-                                    @lang('admin::app.settings.themes.edit.link'): 
+                                    @lang('admin::app.settings.themes.edit.link'):
 
                                     <span class="text-gray-600 transition-all dark:text-gray-300">
                                         @{{ image.link }}
@@ -95,11 +95,11 @@
                                 </p>
 
                                 <p class="text-gray-600 dark:text-gray-300">
-                                    @lang('admin::app.settings.themes.edit.image'): 
+                                    @lang('admin::app.settings.themes.edit.image'):
 
                                     <span class="text-gray-600 transition-all dark:text-gray-300">
                                         <a
-                                            :href="'{{ config('app.url') }}/' + image.image"
+                                            :href="'{{ config('app.url_assets') }}/' + image.image"
                                             :ref="'image_' + index"
                                             target="_blank"
                                             class="text-blue-600 transition-all hover:underline ltr:ml-2 rtl:mr-2"
@@ -115,10 +115,10 @@
 
                         <!-- Actions -->
                         <div class="grid place-content-start gap-1 text-right">
-                            <p 
+                            <p
                                 class="cursor-pointer text-red-600 transition-all hover:underline"
                                 @click="remove(image)"
-                            > 
+                            >
                                 @lang('admin::app.settings.themes.edit.delete')
                             </p>
                         </div>
@@ -140,7 +140,7 @@
                         <p class="text-base font-semibold text-gray-400">
                             @lang('admin::app.settings.themes.edit.slider-add-btn')
                         </p>
-                        
+
                         <p class="text-gray-400">
                             @lang('admin::app.settings.themes.edit.slider-description')
                         </p>
@@ -152,7 +152,7 @@
                 v-slot="{ meta, errors, handleSubmit }"
                 as="div"
             >
-                <form 
+                <form
                     @submit="handleSubmit($event, saveSliderImage)"
                     enctype="multipart/form-data"
                     ref="createSliderForm"
@@ -243,14 +243,14 @@
                     deletedSliders: [],
                 };
             },
-            
+
             created() {
                 if (
-                    this.sliders == null 
+                    this.sliders == null
                     || this.sliders.length == 0
                 ) {
                     this.sliders = { images: [] };
-                }   
+                }
             },
 
             methods: {
@@ -300,11 +300,11 @@
                     this.$emitter.emit('open-confirm-modal', {
                         agree: () => {
                             this.deletedSliders.push(image);
-                    
+
                             this.sliders.images = this.sliders.images.filter(item => {
                                 return (
-                                    item.title !== image.title || 
-                                    item.link !== image.link || 
+                                    item.title !== image.title ||
+                                    item.link !== image.link ||
                                     item.image !== image.image
                                 );
                             });
@@ -314,4 +314,4 @@
             },
         });
     </script>
-@endPushOnce    
+@endPushOnce
