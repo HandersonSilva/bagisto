@@ -5,4 +5,6 @@ touch .env && grep -E "^($(cut -d= -f1 .env.example | paste -sd '|' -))=" <(env)
 
 php artisan migrate --force
 
-supervisord
+#supervisord
+
+php-fpm
